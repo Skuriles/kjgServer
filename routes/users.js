@@ -1,9 +1,5 @@
-var jsonfile = require('jsonfile');
-var fs = require('fs');
 var path = require('path');
 var jwt = require('jsonwebtoken');
-var filePath = path.join(path.resolve(), '/userFiles');
-var file = '/users.json';
 var mongoose = require('mongoose');
 var User = require('../mongoSchemes/user');
 
