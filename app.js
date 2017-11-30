@@ -7,6 +7,7 @@ var bodyParser = require('body-parser');
 var cors = require('cors');
 var mongoose = require('mongoose');
 var User = require('./mongoSchemes/user');
+var Role = require('./mongoSchemes/role');
 var userRoutes = require('./routes/userRoutes');
 
 var app = express();
@@ -38,20 +39,60 @@ mongoose.connect(url);
 var db = mongoose.connection;
 
 db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', function() {
-    var users = User.find(function(err, users) {
-        if (users.length === 0) {
-            var user = new User({ name: "Admin", password: "admin" });
-            user.save(function(err) {
-                if (err) {
-                    console.log(err);
-                } else {
-                    console.log("Superadmin created successfully")
-                }
-            });
-        }
-    });
+db.once('open', () => {
+    checkRoles(checkUsers);
     console.log("Connected successfully to server");
 });
 
+function checkRoles(callback) {
+    Role.find((err, roles) => {
+        if (err) {
+            console.log(err);
+        } else {
+            if (roles.length <= 0) {
+                var adminRole = new Role({ name: "Admin" });
+                var userRole = new Role({ name: "Knecht" });
+                adminRole.save(() => {
+                    if (err) {
+                        console.log(err);
+                    } else {
+                        console.log("AdminRole created successfully");
+                    }
+                    userRole.save(() => {
+                        if (err) {
+                            console.log(err);
+                        } else {
+                            console.log("UserRole created successfully");
+                            callback();
+                        }
+                    })
+                });
+            } else {
+                callback();
+            }
+
+        }
+    });
+}
+
+function checkUsers() {
+    User.find((err, users) => {
+        if (users.length === 0) {
+            Role.findOne({ name: "Admin" }, (err, role) => {
+                if (err) {
+                    console.log(err);
+                }
+                var user = new User({ name: "Admin", password: "admin", role: role._id });
+                user.save((err) => {
+                    if (err) {
+                        console.log(err);
+                    } else {
+                        console.log("Superadmin created successfully")
+                    }
+                });
+            })
+
+        }
+    });
+}
 module.exports = app;

@@ -1,40 +1,41 @@
+var fs = require('fs');
 var path = require('path');
 var jwt = require('jsonwebtoken');
 var mongoose = require('mongoose');
 var User = require('../mongoSchemes/user');
 
 module.exports = {
-    start: function(req, res) {
+    start: (req, res) => {
         res.sendFile(path.resolve(__dirname + '/../views/index.html'));
     },
-    loginWithToken: function(req, res) {
+    loginWithToken: (req, res) => {
         loginWithToken(req, res);
     },
-    setUserLogin: function(req, res) {
+    setUserLogin: (req, res) => {
         setUserLogin(req, res);
     },
-    addNewUser: function(req, res) {
+    addNewUser: (req, res) => {
         addNewUser(req, res);
     },
-    getUserList: function(req, res) {
+    getUserList: (req, res) => {
         getUserList(req, res);
     },
-    getUserOverview: function(req, res) {
+    getUserOverview: (req, res) => {
         getUserOverview(req, res);
     },
-    getUserDetails: function(req, res) {
+    getUserDetails: (req, res) => {
         getUserDetails(req, res);
     },
-    checkAdmin: function(req, res) {
+    checkAdmin: (req, res) => {
         checkAdmin(req, res);
     },
-    updateUserDrinks: function(req, res) {
+    updateUserDrinks: (req, res) => {
         updateUserDrinks(req, res);
     },
-    saveDrink: function(req, res) {
+    saveDrink: (req, res) => {
         saveDrink(req, res);
     },
-    getDailyWinners: function(req, res) {
+    getDailyWinners: (req, res) => {
         getDailyWinners(req, res);
     }
 }
@@ -57,34 +58,10 @@ function writeFile(users, res) {
     });
 }
 
-function copyFile(source, target, cb) {
-    var cbCalled = false;
-
-    var rd = fs.createReadStream(source);
-    rd.on("error", function(err) {
-        done(err);
-    });
-    var wr = fs.createWriteStream(target);
-    wr.on("error", function(err) {
-        done(err);
-    });
-    wr.on("close", function(ex) {
-        done();
-    });
-    rd.pipe(wr);
-
-    function done(err) {
-        if (!cbCalled) {
-            cb(err);
-            cbCalled = true;
-        }
-    }
-}
-
 function getUserList(req, res) {
-    verifyPost(req, function(err, decoded) {
+    verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
-            User.find(function(err, users) {
+            User.find((err, users) => {
                 if (err) {
                     res.status(500);
                     res.end();
@@ -101,7 +78,7 @@ function getUserList(req, res) {
 }
 
 function getUserOverview(req, res) {
-    verifyGet(req, function(err, decoded) {
+    verifyGet(req, (err, decoded) => {
         if (decoded && decoded.user && decoded.user.length > 0) {
             jsonfile.readFile(path.join(filePath, file), (err, users) => {
                 if (!users) {
@@ -156,7 +133,7 @@ function getUserOverview(req, res) {
 }
 
 function getUserDetails(req, res) {
-    verifyPost(req, function(err, decoded) {
+    verifyPost(req, (err, decoded) => {
         if (decoded && decoded.user && decoded.user.length > 0) {
             jsonfile.readFile(path.join(filePath, file), (err, users) => {
                 if (!users) {
@@ -181,7 +158,7 @@ function getUserDetails(req, res) {
 }
 
 function checkAdmin(req, res) {
-    verifyPost(req, function(err, decoded) {
+    verifyPost(req, (err, decoded) => {
         if (decoded && decoded.user && decoded.user.toLowerCase() === "bene") {
             res.end();
         } else {
@@ -193,19 +170,21 @@ function checkAdmin(req, res) {
 }
 
 function addNewUser(req, res) {
-    User.find(function(err, users) {
-        if (users && users.length > 0) {
-            var user = new User(req.body);
-            var checkUser = user.toObject();
-
-            User.findOne({ name: user.name, password: user.password }, function(err, regUser) {
+    var user = new User(req.body);
+    var checkUser = user.toObject();
+    User.findOne({ name: user.name, password: user.password }, (err, regUser) => {
+        if (err) {
+            res.status(500);
+            res.send(err).end();
+            return;
+        }
+        if (!regUser) {
+            Role.findOne({ name: "Knecht" }, (err, role) => {
                 if (err) {
-                    res.status(500);
-                    res.send(err).end();
-                    return;
-                }
-                if (!regUser) {
-                    user.save(function(err) {
+                    console.log(err);
+                } else {
+                    user.role = role.id;
+                    user.save((err) => {
                         if (err) {
                             res.status(500);
                             res.send(err).end();
@@ -216,12 +195,14 @@ function addNewUser(req, res) {
                             return;
                         }
                     });
-                } else {
-                    res.status(500);
-                    res.send("Benutzer existiert bereits").end();
                 }
-            })
+            });
+
+        } else {
+            res.status(500);
+            res.send("Benutzer existiert bereits").end();
         }
+
     });
 }
 
@@ -235,7 +216,7 @@ function saveUserDrink(users, index, type, res) {
 
 
 function getDailyWinners(req, res) {
-    verifyGet(req, function(err, decoded) {
+    verifyGet(req, (err, decoded) => {
         if (decoded && decoded.user && decoded.user.length > 0) {
             jsonfile.readFile(path.join(filePath, file), (err, users) => {
                 if (!users) {
@@ -336,7 +317,7 @@ function getUsersDaily(users) {
 }
 
 function updateUserDrinks(req, res) {
-    verifyPost(req, function(err, decoded) {
+    verifyPost(req, (err, decoded) => {
         if (decoded && decoded.user && decoded.user.length > 0) {
             fs.access(filePath, (err) => {
                 if (err) {
@@ -366,7 +347,7 @@ function updateUserDrinks(req, res) {
 }
 
 function saveDrink(req, res) {
-    verifyPost(req, function(err, decoded) {
+    verifyPost(req, (err, decoded) => {
         if (decoded && decoded.user && decoded.user.length > 0) {
             fs.access(filePath, (err) => {
                 if (err) {
@@ -397,9 +378,9 @@ function saveDrink(req, res) {
 }
 
 function loginWithToken(req, res) {
-    verifyPost(req, function(err, decoded) {
+    verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
-            User.findOne({ name: decoded.name, password: decoded.password }, function(err, regUser) {
+            User.findOne({ name: decoded.name, password: decoded.password }, (err, regUser) => {
                 if (!err && regUser) {
                     // info https://github.com/angular/angular/issues/18680
                     res.status(204);
@@ -427,7 +408,7 @@ function setUserLogin(req, res) {
                 console.log(user.name);
                 var token = jwt.sign({ name: user.name, password: user.password }, cert, { expiresIn: '10y' });
 
-                User.findOne({ name: user.name, password: user.password }, function(err, regUser) {
+                User.findOne({ name: user.name, password: user.password }, (err, regUser) => {
                     if (!err && regUser) {
                         res.send({ token });
                         return;
