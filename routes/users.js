@@ -17,6 +17,9 @@ module.exports = {
     addNewUser: (req, res) => {
         addNewUser(req, res);
     },
+    updateUser: (req, res) => {
+        updateUser(req, res);
+    },
     getUserList: (req, res) => {
         getUserList(req, res);
     },
@@ -204,6 +207,10 @@ function addNewUser(req, res) {
         }
 
     });
+}
+
+function updateUser(req, res) {
+    console.log("updateuser");
 }
 
 function saveUserDrink(users, index, type, res) {
