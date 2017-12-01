@@ -210,7 +210,28 @@ function addNewUser(req, res) {
 }
 
 function updateUser(req, res) {
-    console.log("updateuser");
+    verifyPost(req, (err, decoded) => {
+        if (decoded && decoded.name && decoded.name.length > 0) {
+            var oldUser = req.body;
+            User.findByIdAndUpdate(oldUser.id, {
+                    $set: { password: oldUser.password }
+                }, { new: true },
+                (err, user) => {
+                    if (err) {
+                        res.status(500);
+                        res.send("Benutzer speichern fehlgeschlagen").end();
+                        return;
+                    }
+                    res.status(204)
+                    res.end();
+                    return;
+
+                });
+        } else {
+            res.status(404);
+            return;
+        }
+    });
 }
 
 function saveUserDrink(users, index, type, res) {
