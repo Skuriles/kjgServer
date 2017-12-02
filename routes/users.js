@@ -3,6 +3,7 @@ var path = require('path');
 var jwt = require('jsonwebtoken');
 var mongoose = require('mongoose');
 var User = require('../mongoSchemes/user');
+var Drink = require('../mongoSchemes/drink');
 
 module.exports = {
     start: (req, res) => {
@@ -23,6 +24,9 @@ module.exports = {
     getUserList: (req, res) => {
         getUserList(req, res);
     },
+    getDrinks: (req, res) => {
+        getDrinks(req, res);
+    },
     getUserOverview: (req, res) => {
         getUserOverview(req, res);
     },
@@ -37,6 +41,9 @@ module.exports = {
     },
     saveDrink: (req, res) => {
         saveDrink(req, res);
+    },
+    deleteDrink: (req, res) => {
+        deleteDrink(req, res);
     },
     getDailyWinners: (req, res) => {
         getDailyWinners(req, res);
@@ -57,6 +64,25 @@ function writeFile(users, res) {
             res.status(200).end();
         } else {
             res.status(500).end();
+        }
+    });
+}
+
+function getDrinks(req, res) {
+    verifyPost(req, (err, decoded) => {
+        if (decoded && decoded.name && decoded.name.length > 0) {
+            Drink.find((err, drinks) => {
+                if (err) {
+                    res.status(500);
+                    res.end();
+                    return;
+                }
+                res.send(drinks);
+                return;
+            });
+        } else {
+            res.status(404);
+            return;
         }
     });
 }
@@ -213,7 +239,7 @@ function updateUser(req, res) {
     verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
             var oldUser = req.body;
-            User.findByIdAndUpdate(oldUser.id, {
+            User.findByIdAndUpdate(oldUser._id, {
                     $set: { password: oldUser.password }
                 }, { new: true },
                 (err, user) => {
@@ -374,32 +400,74 @@ function updateUserDrinks(req, res) {
     });
 }
 
+function deleteDrink(req, res) {
+    verifyPost(req, (err, decoded) => {
+        if (decoded && decoded.name && decoded.name.length > 0) {
+            var editDrink = req.body;
+            if (editDrink._id) {
+                Drink.findById(editDrink._id,
+                    (err, drink) => {
+                        if (err) {
+                            res.status(500);
+                            res.send("Getränk löschen fehlgeschlagen").end();
+                            return;
+                        }
+                        drink.remove((err) => {
+                            if (err) {
+                                res.status(500);
+                                res.send("Getränk löschen fehlgeschlagen").end();
+                                return;
+                            } else {
+                                res.status(204)
+                                res.end();
+                                return;
+                            }
+                        });
+                    });
+            } else {
+                res.status(404);
+                return;
+            }
+        }
+    });
+}
+
 function saveDrink(req, res) {
     verifyPost(req, (err, decoded) => {
-        if (decoded && decoded.user && decoded.user.length > 0) {
-            fs.access(filePath, (err) => {
-                if (err) {
-                    fs.mkdir(filePath);
-                }
-            });
-            var type = req.body.type;
-            var users = [];
-            jsonfile.readFile(path.join(filePath, file), (err, users) => {
-                if (!users) {
-                    users = [];
-                }
-                for (var i = 0; i < users.length; i++) {
-                    if (users[i].name.toLowerCase() === decoded.user) {
-                        saveUserDrink(users, i, type, res);
+        if (decoded && decoded.name && decoded.name.length > 0) {
+            var editDrink = req.body;
+            if (editDrink._id) {
+                Drink.findByIdAndUpdate(editDrink._id, {
+                        $set: { name: editDrink.name }
+                    }, { new: true },
+                    (err, drink) => {
+                        if (err) {
+                            res.status(500);
+                            res.send("Getränk speichern fehlgeschlagen").end();
+                            return;
+                        }
+                        res.status(204)
+                        res.end();
+                        return;
+
+                    });
+            } else {
+                var newDrink = new Drink(req.body);
+                newDrink.save((err, drink) => {
+                    if (err) {
+                        res.status(500);
+                        res.send(err).end();
+                        return;
+                    } else {
+                        res.status(204)
+                        res.end();
                         return;
                     }
-                }
-                res.status(500);
-                res.send("Benutzer nicht gefunden - bitte neu einloggen").end();
-            });
+                })
+            }
+
         } else {
             res.status(404);
-            login(res);
             return;
         }
     });
