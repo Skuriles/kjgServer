@@ -6,8 +6,7 @@ var userSchema = Schema({
     password: String,
     email: String,
     checked: Boolean,
-    role: { type: Schema.Types.ObjectId, ref: "Role" },
-    drinks: [{ type: Schema.Types.ObjectId, ref: "drinkPerUserSchema" }]
+    role: { type: Schema.Types.ObjectId, ref: "Role" }
 })
 
 var User = mongoose.model('User', userSchema);

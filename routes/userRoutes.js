@@ -6,7 +6,7 @@ router.route('/').get(userRoutes.start);
 router.route('/getUserList').post(userRoutes.getUserList);
 router.route('/getUserOverview').post(userRoutes.getUserOverview);
 router.route('/register').post(userRoutes.addNewUser);
-router.route('/updateUser').post(userRoutes.updateUser);
+router.route('/updateUserPw').post(userRoutes.updateUserPw);
 router.route('/getDrinks').post(userRoutes.getDrinks);
 router.route('/updateDrink').post(userRoutes.saveDrink);
 router.route('/deleteDrink').post(userRoutes.deleteDrink);

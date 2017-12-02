@@ -4,6 +4,7 @@ var jwt = require('jsonwebtoken');
 var mongoose = require('mongoose');
 var User = require('../mongoSchemes/user');
 var Drink = require('../mongoSchemes/drink');
+var DrinkUser = require('../mongoSchemes/drinkPerUser');
 
 module.exports = {
     start: (req, res) => {
@@ -18,8 +19,8 @@ module.exports = {
     addNewUser: (req, res) => {
         addNewUser(req, res);
     },
-    updateUser: (req, res) => {
-        updateUser(req, res);
+    updateUserPw: (req, res) => {
+        updateUserPw(req, res);
     },
     getUserList: (req, res) => {
         getUserList(req, res);
@@ -235,7 +236,7 @@ function addNewUser(req, res) {
     });
 }
 
-function updateUser(req, res) {
+function updateUserPw(req, res) {
     verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
             var oldUser = req.body;
@@ -372,29 +373,74 @@ function getUsersDaily(users) {
 
 function updateUserDrinks(req, res) {
     verifyPost(req, (err, decoded) => {
-        if (decoded && decoded.user && decoded.user.length > 0) {
-            fs.access(filePath, (err) => {
+        if (decoded && decoded.name && decoded.name.length > 0) {
+            var oldUser = req.body;
+            DrinkUser.find({ user: oldUser._id }, (err, userDrinks) => {
                 if (err) {
-                    fs.mkdir(filePath);
+                    res.status(500);
+                    res.send("Benutzer speichern fehlgeschlagen").end();
+                    return;
                 }
+                var errors = [];
+                for (var i = 0; i < oldUser.drinks.length; i++) {
+                    DrinkUser.findOne({ id: oldUser.drinks[i]._id }, (err, drinkFromDb) => {
+                            if (err) {
+                                res.status(500);
+                                res.send("Benutzer speichern fehlgeschlagen").end();
+                                return;
+                            }
+                            if (!drinkFromDb) {
+                                var newUserDrink = new DrinkUser({
+                                    user: oldUser._id,
+                                    drink: oldUser.drinks[i]._id,
+                                    count: oldUser.drinks[i].count
+                                });
+                                newUserDrink.save((err) => {
+                                    if (err) {
+                                        errors.push(err);
+                                    }
+                                })
+                            }
+                        })
+                        // var found = false;
+                        // for (var j = 0; j < userDrinks.length; j++) {
+                        //     var id = mongoose.Types.ObjectId(oldUser.drinks[i]._id);
+                        //     if (id === userDrinks[j]._id) {
+                        //         found = true;
+                        //         break;
+                        //     }
+                        // }
+                        // if (!found) {
+                        //     var newUserDrink = new DrinkUser({
+                        //         user: oldUser._id,
+                        //         drink: oldUser.drinks[i]._id,
+                        //         count: oldUser.drinks[i].count
+                        //     });
+                        //     newUserDrink.save((err) => {
+                        //         if (err) {
+                        //             errors.push(err);
+                        //         }
+                        //     })
+                        // }
+                }
+                console.log(userDrinks);
             });
-            var drinks = JSON.parse(req.body.drinks);
-            var userName = req.body.name;
-            var users = [];
-            jsonfile.readFile(path.join(filePath, file), (err, users) => {
-                for (var i = 0; i < users.length; i++) {
-                    if (users[i].name.toLowerCase() === userName.toLowerCase()) {
-                        users[i].drinks = drinks;
-                        writeFile(users, res);
+            User.findByIdAndUpdate(oldUser._id, {
+                    $set: { drinks: oldUser.drinks }
+                }, { new: true },
+                (err, user) => {
+                    if (err) {
+                        res.status(500);
+                        res.send("Benutzer speichern fehlgeschlagen").end();
                         return;
                     }
-                }
-                res.status(500);
-                res.send("Benutzer nicht gefunden - bitte neu einloggen").end();
-            });
+                    res.status(204)
+                    res.end();
+                    return;
+
+                });
         } else {
             res.status(404);
-            login(res);
             return;
         }
     });
