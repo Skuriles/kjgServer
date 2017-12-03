@@ -4,7 +4,7 @@ var jwt = require('jsonwebtoken');
 var mongoose = require('mongoose');
 var User = require('../mongoSchemes/user');
 var Drink = require('../mongoSchemes/drink');
-var DrinkUser = require('../mongoSchemes/drinkPerUser');
+var UserDrink = require('../mongoSchemes/drinkPerUser');
 
 module.exports = {
     start: (req, res) => {
@@ -27,6 +27,9 @@ module.exports = {
     },
     getDrinks: (req, res) => {
         getDrinks(req, res);
+    },
+    getUserDrinks: (req, res) => {
+        getUserDrinks(req, res);
     },
     getUserOverview: (req, res) => {
         getUserOverview(req, res);
@@ -65,6 +68,26 @@ function writeFile(users, res) {
             res.status(200).end();
         } else {
             res.status(500).end();
+        }
+    });
+}
+
+function getUserDrinks(req, res) {
+    verifyPost(req, (err, decoded) => {
+        if (decoded && decoded.name && decoded.name.length > 0) {
+            var userid = mongoose.Types.ObjectId(req.body._id);
+            UserDrink.find({ user: userid }, (err, userDrinks) => {
+                if (err) {
+                    res.status(500);
+                    res.end();
+                    return;
+                }
+                res.send(userDrinks);
+                return;
+            });
+        } else {
+            res.status(404);
+            return;
         }
     });
 }
@@ -375,70 +398,34 @@ function updateUserDrinks(req, res) {
     verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
             var oldUser = req.body;
-            DrinkUser.find({ user: oldUser._id }, (err, userDrinks) => {
-                if (err) {
-                    res.status(500);
-                    res.send("Benutzer speichern fehlgeschlagen").end();
-                    return;
-                }
+            if (oldUser) {
+                var updateDrinkUser = [];
+                var promises = [];
                 var errors = [];
                 for (var i = 0; i < oldUser.drinks.length; i++) {
-                    DrinkUser.findOne({ id: oldUser.drinks[i]._id }, (err, drinkFromDb) => {
-                            if (err) {
-                                res.status(500);
-                                res.send("Benutzer speichern fehlgeschlagen").end();
-                                return;
-                            }
-                            if (!drinkFromDb) {
-                                var newUserDrink = new DrinkUser({
-                                    user: oldUser._id,
-                                    drink: oldUser.drinks[i]._id,
-                                    count: oldUser.drinks[i].count
-                                });
-                                newUserDrink.save((err) => {
-                                    if (err) {
-                                        errors.push(err);
-                                    }
-                                })
-                            }
-                        })
-                        // var found = false;
-                        // for (var j = 0; j < userDrinks.length; j++) {
-                        //     var id = mongoose.Types.ObjectId(oldUser.drinks[i]._id);
-                        //     if (id === userDrinks[j]._id) {
-                        //         found = true;
-                        //         break;
-                        //     }
-                        // }
-                        // if (!found) {
-                        //     var newUserDrink = new DrinkUser({
-                        //         user: oldUser._id,
-                        //         drink: oldUser.drinks[i]._id,
-                        //         count: oldUser.drinks[i].count
-                        //     });
-                        //     newUserDrink.save((err) => {
-                        //         if (err) {
-                        //             errors.push(err);
-                        //         }
-                        //     })
-                        // }
+                    var promise = UserDrink.update({ user: oldUser._id, drink: oldUser.drinks[i]._id }, { count: oldUser.drinks[i].count }, { upsert: true });
+                    promises.push(promise);
                 }
-                console.log(userDrinks);
-            });
-            User.findByIdAndUpdate(oldUser._id, {
-                    $set: { drinks: oldUser.drinks }
-                }, { new: true },
-                (err, user) => {
-                    if (err) {
+                Promise.all(promises)
+                    .then(values => {
+                        if (errors.length > 0) {
+                            console.log(errors);
+                            res.status(500);
+                            res.send("Speichern fehlgeschlagen").end();
+                            return;
+                        } else {
+                            res.status(204);
+                            res.end();
+                            return;
+                        }
+                    })
+                    .catch(err => {
                         res.status(500);
-                        res.send("Benutzer speichern fehlgeschlagen").end();
+                        res.send("Speichern fehlgeschlagen").end();
                         return;
-                    }
-                    res.status(204)
-                    res.end();
-                    return;
+                    });
+            }
 
-                });
         } else {
             res.status(404);
             return;

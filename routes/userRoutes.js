@@ -8,6 +8,7 @@ router.route('/getUserOverview').post(userRoutes.getUserOverview);
 router.route('/register').post(userRoutes.addNewUser);
 router.route('/updateUserPw').post(userRoutes.updateUserPw);
 router.route('/getDrinks').post(userRoutes.getDrinks);
+router.route('/getUserDrinks').post(userRoutes.getUserDrinks);
 router.route('/updateDrink').post(userRoutes.saveDrink);
 router.route('/deleteDrink').post(userRoutes.deleteDrink);
 router.route('/updateUserDrinks').post(userRoutes.updateUserDrinks);
