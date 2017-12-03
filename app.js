@@ -8,7 +8,7 @@ var cors = require('cors');
 var mongoose = require('mongoose');
 var User = require('./mongoSchemes/user');
 var Role = require('./mongoSchemes/role');
-var userRoutes = require('./routes/userRoutes');
+var routes = require('./routes/routes');
 
 var app = express();
 
@@ -25,7 +25,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-app.use('/api', userRoutes);
+app.use('/api', routes);
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
 //mongostuff
@@ -35,7 +35,7 @@ var url = 'mongodb://kjgAdmin:kjg2017@localhost:27017/kjgapp';
 
 // Use connect method to connect to the server
 // mongo user is kjgAdmin, pw: kjg2017
-mongoose.connect(url);
+mongoose.connect(url, { useMongoClient: true });
 var db = mongoose.connection;
 
 db.on('error', console.error.bind(console, 'connection error:'));

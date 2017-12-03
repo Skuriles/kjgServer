@@ -5,6 +5,7 @@ var mongoose = require('mongoose');
 var User = require('../mongoSchemes/user');
 var Drink = require('../mongoSchemes/drink');
 var UserDrink = require('../mongoSchemes/drinkPerUser');
+var Role = require('../mongoSchemes/role');
 
 module.exports = {
     start: (req, res) => {
@@ -19,38 +20,20 @@ module.exports = {
     addNewUser: (req, res) => {
         addNewUser(req, res);
     },
-    updateUserPw: (req, res) => {
-        updateUserPw(req, res);
+    updateUser: (req, res) => {
+        updateUser(req, res);
     },
     getUserList: (req, res) => {
         getUserList(req, res);
     },
-    getDrinks: (req, res) => {
-        getDrinks(req, res);
-    },
-    getUserDrinks: (req, res) => {
-        getUserDrinks(req, res);
+    getRoles: (req, res) => {
+        getRoles(req, res);
     },
     getUserOverview: (req, res) => {
         getUserOverview(req, res);
     },
     getUserDetails: (req, res) => {
         getUserDetails(req, res);
-    },
-    checkAdmin: (req, res) => {
-        checkAdmin(req, res);
-    },
-    updateUserDrinks: (req, res) => {
-        updateUserDrinks(req, res);
-    },
-    saveDrink: (req, res) => {
-        saveDrink(req, res);
-    },
-    deleteDrink: (req, res) => {
-        deleteDrink(req, res);
-    },
-    getDailyWinners: (req, res) => {
-        getDailyWinners(req, res);
     }
 }
 
@@ -60,48 +43,16 @@ function verifyPost(req, callback) {
     jwt.verify(token, cert, callback);
 }
 
-function writeFile(users, res) {
-    var userFilePath = path.join(filePath, file);
-    copyFile(userFilePath, path.join(filePath, "user.backup.json"));
-    jsonfile.writeFile(path.join(filePath, file), users, (err) => {
-        if (!err) {
-            res.status(200).end();
-        } else {
-            res.status(500).end();
-        }
-    });
-}
-
-function getUserDrinks(req, res) {
+function getRoles(req, res) {
     verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
-            var userid = mongoose.Types.ObjectId(req.body._id);
-            UserDrink.find({ user: userid }, (err, userDrinks) => {
+            Role.find((err, roles) => {
                 if (err) {
                     res.status(500);
                     res.end();
                     return;
                 }
-                res.send(userDrinks);
-                return;
-            });
-        } else {
-            res.status(404);
-            return;
-        }
-    });
-}
-
-function getDrinks(req, res) {
-    verifyPost(req, (err, decoded) => {
-        if (decoded && decoded.name && decoded.name.length > 0) {
-            Drink.find((err, drinks) => {
-                if (err) {
-                    res.status(500);
-                    res.end();
-                    return;
-                }
-                res.send(drinks);
+                res.send(roles);
                 return;
             });
         } else {
@@ -210,18 +161,6 @@ function getUserDetails(req, res) {
     });
 }
 
-function checkAdmin(req, res) {
-    verifyPost(req, (err, decoded) => {
-        if (decoded && decoded.user && decoded.user.toLowerCase() === "bene") {
-            res.end();
-        } else {
-            res.status(403);
-            res.end();
-            return;
-        }
-    });
-}
-
 function addNewUser(req, res) {
     var user = new User(req.body);
     var checkUser = user.toObject();
@@ -259,13 +198,17 @@ function addNewUser(req, res) {
     });
 }
 
-function updateUserPw(req, res) {
+function updateUser(req, res) {
     verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
             var oldUser = req.body;
-            User.findByIdAndUpdate(oldUser._id, {
-                    $set: { password: oldUser.password }
-                }, { new: true },
+            var pw = oldUser.password;
+            var updateUserModel = {};
+            if (pw && pw.length > 0) {
+                updateUserModel.password = pw;
+            }
+            updateUserModel.role = mongoose.Types.ObjectId(oldUser.role._id);
+            User.findByIdAndUpdate(oldUser._id, updateUserModel, { new: true },
                 (err, user) => {
                     if (err) {
                         res.status(500);
@@ -283,80 +226,6 @@ function updateUserPw(req, res) {
         }
     });
 }
-
-function saveUserDrink(users, index, type, res) {
-    var drinkIndex = parseInt(type);
-    var timestamp = new Date().getTime();
-    users[index].drinks[drinkIndex].count++;
-    users[index].drinks[drinkIndex].timestamp.push(timestamp);
-    writeFile(users, res);
-}
-
-
-function getDailyWinners(req, res) {
-    verifyGet(req, (err, decoded) => {
-        if (decoded && decoded.user && decoded.user.length > 0) {
-            jsonfile.readFile(path.join(filePath, file), (err, users) => {
-                if (!users) {
-                    users = [];
-                    res.send(users);
-                    return;
-                }
-                var usersDaily = getUsersDaily(users);
-                var winners = getWinnersPerDay(usersDaily)
-                res.send(winners);
-                return;
-            });
-        } else {
-            res.status(404);
-            login(res);
-            return;
-        }
-    });
-}
-
-function getWinnersPerDay(users) {
-    var dayWinners = [];
-    for (var i = 0; i < users.length; i++) {
-        for (var j = 0; j < users[i].dayTotal.length; j++) {
-            var dayTotal = users[i].dayTotal[j];
-            var newEntry = true;
-            for (var k = 0; k < dayWinners.length; k++) {
-                if (dayWinners[k].day === dayTotal.day && dayWinners[k].month === dayTotal.month && dayWinners[k].year === dayTotal.year) {
-                    if (dayWinners[k].total < dayTotal.total) {
-                        dayWinners[k].name = users[i].name;
-                        dayWinners[k].total = dayTotal.total;
-
-                    }
-                    if (dayWinners[k].total == dayTotal.total) {
-                        if (dayWinners[k].name.indexOf(users[i].name) === -1) {
-                            dayWinners[k].name = dayWinners[k].name + " & " + users[i].name;
-                        }
-                    }
-                    newEntry = false;
-                    break;
-                }
-            }
-            if (newEntry) {
-                dayWinners.push({ name: users[i].name, day: dayTotal.day, month: dayTotal.month, year: dayTotal.year, total: dayTotal.total });
-            }
-        }
-    }
-    return dayWinners.sort(sortByDate);
-}
-
-function sortByDate(a, b) {
-    var aDay = a.day;
-    var aMonth = a.Month - 1;
-    var aYear = a.Year;
-    var aDate = new Date(aYear, aMonth, aDay).getTime();
-    var bDay = b.day;
-    var bMonth = b.Month - 1;
-    var bYear = b.Year;
-    var bDate = new Date(bYear, bMonth, bDay).getTime();
-    return ((aDate < bDate) ? -1 : ((aDate > bDate) ? 1 : 0));
-}
-
 
 function getUsersDaily(users) {
     var usersDaily = [];
@@ -392,118 +261,6 @@ function getUsersDaily(users) {
         usersDaily.push(userDayTotal);
     }
     return usersDaily;
-}
-
-function updateUserDrinks(req, res) {
-    verifyPost(req, (err, decoded) => {
-        if (decoded && decoded.name && decoded.name.length > 0) {
-            var oldUser = req.body;
-            if (oldUser) {
-                var updateDrinkUser = [];
-                var promises = [];
-                var errors = [];
-                for (var i = 0; i < oldUser.drinks.length; i++) {
-                    var promise = UserDrink.update({ user: oldUser._id, drink: oldUser.drinks[i]._id }, { count: oldUser.drinks[i].count }, { upsert: true });
-                    promises.push(promise);
-                }
-                Promise.all(promises)
-                    .then(values => {
-                        if (errors.length > 0) {
-                            console.log(errors);
-                            res.status(500);
-                            res.send("Speichern fehlgeschlagen").end();
-                            return;
-                        } else {
-                            res.status(204);
-                            res.end();
-                            return;
-                        }
-                    })
-                    .catch(err => {
-                        res.status(500);
-                        res.send("Speichern fehlgeschlagen").end();
-                        return;
-                    });
-            }
-
-        } else {
-            res.status(404);
-            return;
-        }
-    });
-}
-
-function deleteDrink(req, res) {
-    verifyPost(req, (err, decoded) => {
-        if (decoded && decoded.name && decoded.name.length > 0) {
-            var editDrink = req.body;
-            if (editDrink._id) {
-                Drink.findById(editDrink._id,
-                    (err, drink) => {
-                        if (err) {
-                            res.status(500);
-                            res.send("Getränk löschen fehlgeschlagen").end();
-                            return;
-                        }
-                        drink.remove((err) => {
-                            if (err) {
-                                res.status(500);
-                                res.send("Getränk löschen fehlgeschlagen").end();
-                                return;
-                            } else {
-                                res.status(204)
-                                res.end();
-                                return;
-                            }
-                        });
-                    });
-            } else {
-                res.status(404);
-                return;
-            }
-        }
-    });
-}
-
-function saveDrink(req, res) {
-    verifyPost(req, (err, decoded) => {
-        if (decoded && decoded.name && decoded.name.length > 0) {
-            var editDrink = req.body;
-            if (editDrink._id) {
-                Drink.findByIdAndUpdate(editDrink._id, {
-                        $set: { name: editDrink.name }
-                    }, { new: true },
-                    (err, drink) => {
-                        if (err) {
-                            res.status(500);
-                            res.send("Getränk speichern fehlgeschlagen").end();
-                            return;
-                        }
-                        res.status(204)
-                        res.end();
-                        return;
-
-                    });
-            } else {
-                var newDrink = new Drink(req.body);
-                newDrink.save((err, drink) => {
-                    if (err) {
-                        res.status(500);
-                        res.send(err).end();
-                        return;
-                    } else {
-                        res.status(204)
-                        res.end();
-                        return;
-                    }
-                })
-            }
-
-        } else {
-            res.status(404);
-            return;
-        }
-    });
 }
 
 function loginWithToken(req, res) {
