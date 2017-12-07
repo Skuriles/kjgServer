@@ -202,12 +202,17 @@ function updateUser(req, res) {
     verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
             var oldUser = req.body;
+            if(oldUser.name = decoded.name){
+                res.status(500);
+                res.send("Eigener Benutzer kann nicht geändert werden").end();
+                return;
+            }
             var pw = oldUser.password;
             var updateUserModel = {};
             if (pw && pw.length > 0) {
                 updateUserModel.password = pw;
             }
-            updateUserModel.role = mongoose.Types.ObjectId(oldUser.role._id);
+            updateUserModel.role = mongoose.Types.ObjectId(oldUser.role);          
             User.findByIdAndUpdate(oldUser._id, updateUserModel, { new: true },
                 (err, user) => {
                     if (err) {

@@ -83,7 +83,7 @@ function checkUsers() {
                     console.log(err);
                 }
                 var user = new User({ name: "Admin", password: "admin", role: role._id });
-                user.save((err) => {
+                user.save((err, user) => {
                     if (err) {
                         console.log(err);
                     } else {
