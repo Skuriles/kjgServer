@@ -3,7 +3,7 @@ var Schema = mongoose.Schema;
 
 var userSchema = Schema({
     name: String,
-    password: String,
+    password: { type: String, select: false },
     email: String,
     checked: Boolean,
     role: { type: Schema.Types.ObjectId, ref: "Role" }

@@ -202,7 +202,7 @@ function updateUser(req, res) {
     verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
             var oldUser = req.body;
-            if(oldUser.name = decoded.name){
+            if (oldUser.name = decoded.name) {
                 res.status(500);
                 res.send("Eigener Benutzer kann nicht geändert werden").end();
                 return;
@@ -212,7 +212,7 @@ function updateUser(req, res) {
             if (pw && pw.length > 0) {
                 updateUserModel.password = pw;
             }
-            updateUserModel.role = mongoose.Types.ObjectId(oldUser.role);          
+            updateUserModel.role = mongoose.Types.ObjectId(oldUser.role);
             User.findByIdAndUpdate(oldUser._id, updateUserModel, { new: true },
                 (err, user) => {
                     if (err) {
@@ -273,9 +273,9 @@ function loginWithToken(req, res) {
         if (decoded && decoded.name && decoded.name.length > 0) {
             User.findOne({ name: decoded.name, password: decoded.password }, (err, regUser) => {
                 if (!err && regUser) {
-                    // info https://github.com/angular/angular/issues/18680
-                    res.status(204);
-                    res.send("login").end();
+                    // info https://github.com/angular/angular/issues/18680                    
+                    console.log(regUser)
+                    res.send({ user: regUser });
                     return;
                 } else {
                     res.status(403);
@@ -301,7 +301,7 @@ function setUserLogin(req, res) {
 
                 User.findOne({ name: user.name, password: user.password }, (err, regUser) => {
                     if (!err && regUser) {
-                        res.send({ token });
+                        res.send({ token: token, user: regUser });
                         return;
                     } else {
                         res.status(500);
