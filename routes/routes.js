@@ -1,7 +1,7 @@
 var express = require('express');
 var router = express.Router();
-var userRoutes = require('./users');
-var drinkRoutes = require('./drinks');
+var userRoutes = require('./users_routes');
+var drinkRoutes = require('./drinks_routes');
 
 router.route('/').get(userRoutes.start);
 router.route('/getUserList').post(userRoutes.getUserList);
