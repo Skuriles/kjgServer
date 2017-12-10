@@ -162,8 +162,7 @@ function getUserDetails(req, res) {
 }
 
 function addNewUser(req, res) {
-    var user = new User(req.body);
-    var checkUser = user.toObject();
+    var user = req.body;
     User.findOne({ name: user.name, password: user.password }, (err, regUser) => {
         if (err) {
             res.status(500);
@@ -175,8 +174,9 @@ function addNewUser(req, res) {
                 if (err) {
                     console.log(err);
                 } else {
-                    user.role = role.id;
-                    user.save((err) => {
+                    var newUser = new User({ name: user.name, password: user.password, role: role.id });
+                    // user.role = mongoose.Types.ObjectId(role.id);
+                    newUser.save((err) => {
                         if (err) {
                             res.status(500);
                             res.send(err).end();

@@ -77,6 +77,10 @@ function getUserDrinks(req, res) {
                     }
 
                 }
+                for (let i = 0; i < drinkList.length; i++) {
+                    const drinks = drinkList[i].drinks;
+                    drinks.sort(Tools.sortByDrinkName);
+                }
                 res.send(drinkList);
                 return;
             });
@@ -90,12 +94,13 @@ function getUserDrinks(req, res) {
 function getDrinks(req, res) {
     verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
-            Drink.find((err, drinks) => {
+            Drink.find().sort({ name: 1 }).exec((err, drinks) => {
                 if (err) {
                     res.status(500);
                     res.end();
                     return;
                 }
+                drinks.sort(Tools.sortByDrinkName);
                 res.send(drinks);
                 return;
             });
