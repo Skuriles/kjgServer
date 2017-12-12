@@ -1,12 +1,12 @@
-var fs = require('fs');
-var path = require('path');
-var jwt = require('jsonwebtoken');
-var mongoose = require('mongoose');
-var User = require('../mongoSchemes/user');
-var Drink = require('../mongoSchemes/drink');
-var UserDrink = require('../mongoSchemes/drinkPerUser');
-var Role = require('../mongoSchemes/role');
-var Tools = require('../tools/tools');
+var fs = require("fs");
+var path = require("path");
+var jwt = require("jsonwebtoken");
+var mongoose = require("mongoose");
+var User = require("../mongoSchemes/user");
+var Drink = require("../mongoSchemes/drink");
+var UserDrink = require("../mongoSchemes/drinkPerUser");
+var Role = require("../mongoSchemes/role");
+var Tools = require("../tools/tools");
 
 module.exports = {
     getDrinks: (req, res) => {
@@ -21,6 +21,9 @@ module.exports = {
     updateUserDrinks: (req, res) => {
         updateUserDrinks(req, res);
     },
+    addUserDrink: (req, res) => {
+        addUserDrink(req, res);
+    },
     saveDrink: (req, res) => {
         saveDrink(req, res);
     },
@@ -30,11 +33,11 @@ module.exports = {
     getDailyWinners: (req, res) => {
         getDailyWinners(req, res);
     }
-}
+};
 
 function verifyPost(req, callback) {
     var token = req.headers.authorization;
-    var cert = fs.readFileSync('private.key'); // get public key
+    var cert = fs.readFileSync("private.key"); // get public key
     jwt.verify(token, cert, callback);
 }
 
@@ -42,48 +45,60 @@ function getUserDrinks(req, res) {
     verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
             var userids = req.body;
-            UserDrink.find({ user: { $in: userids } }).populate('user drink').exec((err, userDrinks) => {
-                if (err) {
-                    res.status(500);
-                    res.end();
-                    return;
-                }
-                var drinkList = [];
-                for (var i = 0; i < userDrinks.length; i++) {
-                    var found = false;
-                    for (var j = 0; j < drinkList.length; j++) {
-                        if (drinkList[j].userid === userDrinks[i].user._id) {
-                            drinkList[j].drinks.push({
+            UserDrink.find({ user: { $in: userids } })
+                .populate("user drink")
+                .exec((err, userDrinks) => {
+                    if (err) {
+                        res.status(500);
+                        res.end();
+                        return;
+                    }
+                    var drinkList = [];
+                    for (var i = 0; i < userDrinks.length; i++) {
+                        var found = false;
+                        for (var j = 0; j < drinkList.length; j++) {
+                            if (drinkList[j].userid === userDrinks[i].user._id) {
+                                var drinkFound = false;
+                                for (let k = 0; k < drinkList[j].drinks.length; k++) {
+                                    const drink = drinkList[j].drinks[k];
+                                    if (drink._id === userDrinks[i].drink) {
+                                        drinkFound = true;
+                                        drinkList[j].drinks.count++;
+                                        break;
+                                    }
+                                }
+                                if (!drinkFound) {
+                                    drinkList[j].drinks.push({
+                                        drinkId: userDrinks[i].drink._id,
+                                        drinkName: userDrinks[i].drink.name,
+                                        count: 1
+                                    });
+                                }
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            var overviewItem = {
+                                userName: userDrinks[i].user.name,
+                                userid: userDrinks[i].user._id
+                            };
+                            overviewItem.drinks = [];
+                            overviewItem.drinks.push({
                                 drinkId: userDrinks[i].drink._id,
                                 drinkName: userDrinks[i].drink.name,
-                                count: userDrinks[i].count
+                                count: 1
                             });
-                            found = true;
-                            break;
+                            drinkList.push(overviewItem);
                         }
                     }
-                    if (!found) {
-                        var overviewItem = {
-                            userName: userDrinks[i].user.name,
-                            userid: userDrinks[i].user._id
-                        };
-                        overviewItem.drinks = [];
-                        overviewItem.drinks.push({
-                            drinkId: userDrinks[i].drink._id,
-                            drinkName: userDrinks[i].drink.name,
-                            count: userDrinks[i].count
-                        });
-                        drinkList.push(overviewItem);
+                    for (let i = 0; i < drinkList.length; i++) {
+                        const drinks = drinkList[i].drinks;
+                        drinks.sort(Tools.sortByDrinkName);
                     }
-
-                }
-                for (let i = 0; i < drinkList.length; i++) {
-                    const drinks = drinkList[i].drinks;
-                    drinks.sort(Tools.sortByDrinkName);
-                }
-                res.send(drinkList);
-                return;
-            });
+                    res.send(drinkList);
+                    return;
+                });
         } else {
             res.status(404);
             return;
@@ -94,16 +109,18 @@ function getUserDrinks(req, res) {
 function getDrinks(req, res) {
     verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
-            Drink.find().sort({ name: 1 }).exec((err, drinks) => {
-                if (err) {
-                    res.status(500);
-                    res.end();
+            Drink.find()
+                .sort({ name: 1 })
+                .exec((err, drinks) => {
+                    if (err) {
+                        res.status(500);
+                        res.end();
+                        return;
+                    }
+                    drinks.sort(Tools.sortByDrinkName);
+                    res.send(drinks);
                     return;
-                }
-                drinks.sort(Tools.sortByDrinkName);
-                res.send(drinks);
-                return;
-            });
+                });
         } else {
             res.status(404);
             return;
@@ -112,8 +129,8 @@ function getDrinks(req, res) {
 }
 
 function getDailyWinners(req, res) {
-    verifyGet(req, (err, decoded) => {
-        if (decoded && decoded.user && decoded.user.length > 0) {
+    verifyPost(req, (err, decoded) => {
+        if (decoded && decoded.name && decoded.name.length > 0) {
             jsonfile.readFile(path.join(filePath, file), (err, users) => {
                 if (!users) {
                     users = [];
@@ -121,7 +138,7 @@ function getDailyWinners(req, res) {
                     return;
                 }
                 var usersDaily = getUsersDaily(users);
-                var winners = getWinnersPerDay(usersDaily)
+                var winners = getWinnersPerDay(usersDaily);
                 res.send(winners);
                 return;
             });
@@ -140,11 +157,14 @@ function getWinnersPerDay(users) {
             var dayTotal = users[i].dayTotal[j];
             var newEntry = true;
             for (var k = 0; k < dayWinners.length; k++) {
-                if (dayWinners[k].day === dayTotal.day && dayWinners[k].month === dayTotal.month && dayWinners[k].year === dayTotal.year) {
+                if (
+                    dayWinners[k].day === dayTotal.day &&
+                    dayWinners[k].month === dayTotal.month &&
+                    dayWinners[k].year === dayTotal.year
+                ) {
                     if (dayWinners[k].total < dayTotal.total) {
                         dayWinners[k].name = users[i].name;
                         dayWinners[k].total = dayTotal.total;
-
                     }
                     if (dayWinners[k].total == dayTotal.total) {
                         if (dayWinners[k].name.indexOf(users[i].name) === -1) {
@@ -156,7 +176,13 @@ function getWinnersPerDay(users) {
                 }
             }
             if (newEntry) {
-                dayWinners.push({ name: users[i].name, day: dayTotal.day, month: dayTotal.month, year: dayTotal.year, total: dayTotal.total });
+                dayWinners.push({
+                    name: users[i].name,
+                    day: dayTotal.day,
+                    month: dayTotal.month,
+                    year: dayTotal.year,
+                    total: dayTotal.total
+                });
             }
         }
     }
@@ -179,7 +205,11 @@ function getUsersDaily(users) {
                 var year = date.getFullYear();
                 var dayFound = false;
                 for (var t = 0; t < userDayTotal.dayTotal.length; t++) {
-                    if (userDayTotal.dayTotal[t].day === day && userDayTotal.dayTotal[t].month === month && userDayTotal.dayTotal[t].year === year) {
+                    if (
+                        userDayTotal.dayTotal[t].day === day &&
+                        userDayTotal.dayTotal[t].month === month &&
+                        userDayTotal.dayTotal[t].year === year
+                    ) {
                         if (!userDayTotal.dayTotal[t].total) {
                             userDayTotal.dayTotal[t].total = 1;
                         } else {
@@ -190,13 +220,55 @@ function getUsersDaily(users) {
                     }
                 }
                 if (!dayFound) {
-                    userDayTotal.dayTotal.push({ day: day, month: month, year: year, total: 1 });
+                    userDayTotal.dayTotal.push({
+                        day: day,
+                        month: month,
+                        year: year,
+                        total: 1
+                    });
                 }
             }
         }
         usersDaily.push(userDayTotal);
     }
     return usersDaily;
+}
+
+function addUserDrink(req, res) {
+    verifyPost(req, (err, decoded) => {
+        if (decoded && decoded.name && decoded.name.length > 0) {
+            var addDrink = req.body;
+            if (!addDrink.add) {
+                UserDrink.findOne({ user: addDrink.userId, drink: addDrink.drinkId }, {}, { sort: { created_at: -1 } },
+                    function(err, data) {
+                        if (err) {
+                            res.status(500);
+                            res.send("Speichern fehlgeschlagen").end();
+                            return;
+                        }
+                        data.remove();
+                        res.status(204);
+                        res.send("Speichern erfolgreich").end();
+                    }
+                );
+            } else {
+                var userDrink = new UserDrink({
+                    user: addDrink.userId,
+                    drink: addDrink.drinkId
+                });
+                userDrink.save(err => {
+                    if (err) {
+                        res.status(500);
+                        res.send("Speichern fehlgeschlagen").end();
+                        return;
+                    } else {
+                        res.status(204);
+                        res.send("Speichern erfolgreich").end();
+                    }
+                });
+            }
+        }
+    });
 }
 
 function updateUserDrinks(req, res) {
@@ -230,7 +302,6 @@ function updateUserDrinks(req, res) {
                         return;
                     });
             }
-
         } else {
             res.status(404);
             return;
@@ -243,25 +314,24 @@ function deleteDrink(req, res) {
         if (decoded && decoded.name && decoded.name.length > 0) {
             var editDrink = req.body;
             if (editDrink._id) {
-                Drink.findById(editDrink._id,
-                    (err, drink) => {
+                Drink.findById(editDrink._id, (err, drink) => {
+                    if (err) {
+                        res.status(500);
+                        res.send("Getränk löschen fehlgeschlagen").end();
+                        return;
+                    }
+                    drink.remove(err => {
                         if (err) {
                             res.status(500);
                             res.send("Getränk löschen fehlgeschlagen").end();
                             return;
+                        } else {
+                            res.status(204);
+                            res.end();
+                            return;
                         }
-                        drink.remove((err) => {
-                            if (err) {
-                                res.status(500);
-                                res.send("Getränk löschen fehlgeschlagen").end();
-                                return;
-                            } else {
-                                res.status(204)
-                                res.end();
-                                return;
-                            }
-                        });
                     });
+                });
             } else {
                 res.status(404);
                 return;
@@ -275,7 +345,8 @@ function saveDrink(req, res) {
         if (decoded && decoded.name && decoded.name.length > 0) {
             var editDrink = req.body;
             if (editDrink._id) {
-                Drink.findByIdAndUpdate(editDrink._id, {
+                Drink.findByIdAndUpdate(
+                    editDrink._id, {
                         $set: { name: editDrink.name }
                     }, { new: true },
                     (err, drink) => {
@@ -284,11 +355,11 @@ function saveDrink(req, res) {
                             res.send("Getränk speichern fehlgeschlagen").end();
                             return;
                         }
-                        res.status(204)
+                        res.status(204);
                         res.end();
                         return;
-
-                    });
+                    }
+                );
             } else {
                 var newDrink = new Drink(req.body);
                 newDrink.save((err, drink) => {
@@ -297,13 +368,12 @@ function saveDrink(req, res) {
                         res.send(err).end();
                         return;
                     } else {
-                        res.status(204)
+                        res.status(204);
                         res.end();
                         return;
                     }
-                })
+                });
             }
-
         } else {
             res.status(404);
             return;

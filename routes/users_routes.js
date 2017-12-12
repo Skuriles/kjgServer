@@ -4,7 +4,6 @@ var jwt = require('jsonwebtoken');
 var mongoose = require('mongoose');
 var User = require('../mongoSchemes/user');
 var Drink = require('../mongoSchemes/drink');
-var UserDrink = require('../mongoSchemes/drinkPerUser');
 var Role = require('../mongoSchemes/role');
 
 module.exports = {
@@ -273,8 +272,6 @@ function loginWithToken(req, res) {
         if (decoded && decoded.name && decoded.name.length > 0) {
             User.findOne({ name: decoded.name, password: decoded.password }, (err, regUser) => {
                 if (!err && regUser) {
-                    // info https://github.com/angular/angular/issues/18680                    
-                    console.log(regUser)
                     res.send({ user: regUser });
                     return;
                 } else {

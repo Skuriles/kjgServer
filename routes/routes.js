@@ -18,6 +18,7 @@ router.route('/getDailyWinners').post(drinkRoutes.getDailyWinners);
 router.route('/getDrinks').post(drinkRoutes.getDrinks);
 router.route('/getUserDrinks').post(drinkRoutes.getUserDrinks);
 router.route('/updateDrink').post(drinkRoutes.saveDrink);
+router.route('/addUserDrink').post(drinkRoutes.addUserDrink);
 router.route('/deleteDrink').post(drinkRoutes.deleteDrink);
 router.route('/updateUserDrinks').post(drinkRoutes.updateUserDrinks);
 
