@@ -7,6 +7,7 @@ var Drink = require("../mongoSchemes/drink");
 var UserDrink = require("../mongoSchemes/drinkPerUser");
 var Role = require("../mongoSchemes/role");
 var Tools = require("../tools/tools");
+mongoose.Promise = Promise;
 
 module.exports = {
     getDrinks: (req, res) => {
@@ -61,9 +62,9 @@ function getUserDrinks(req, res) {
                                 var drinkFound = false;
                                 for (let k = 0; k < drinkList[j].drinks.length; k++) {
                                     const drink = drinkList[j].drinks[k];
-                                    if (drink._id === userDrinks[i].drink) {
+                                    if (drink.drinkId === userDrinks[i].drink._id) {
                                         drinkFound = true;
-                                        drinkList[j].drinks.count++;
+                                        drink.count++;
                                         break;
                                     }
                                 }
@@ -252,16 +253,19 @@ function addUserDrink(req, res) {
                     }
                 );
             } else {
+                var drinkId = mongoose.Types.ObjectId(addDrink.drinkId);
+                var userId = mongoose.Types.ObjectId(addDrink.userId);
                 var userDrink = new UserDrink({
-                    user: addDrink.userId,
-                    drink: addDrink.drinkId
+                    user: userId,
+                    drink: drinkId
                 });
-                userDrink.save(err => {
+                userDrink.save((err, drink) => {
                     if (err) {
                         res.status(500);
                         res.send("Speichern fehlgeschlagen").end();
                         return;
                     } else {
+                        console.log(drink);
                         res.status(204);
                         res.send("Speichern erfolgreich").end();
                     }
@@ -280,7 +284,7 @@ function updateUserDrinks(req, res) {
                 var promises = [];
                 var errors = [];
                 for (var i = 0; i < userDrink.drinks.length; i++) {
-                    var promise = UserDrink.update({ user: userDrink.userid, drink: userDrink.drinks[i].drinkId }, { count: userDrink.drinks[i].count }, { upsert: true });
+                    var promise = UserDrink.update({ user: userDrink.userid, drink: userDrink.drinks[i].drinkId }, { $set: { count: userDrink.drinks[i].count } }, { upsert: true });
                     promises.push(promise);
                 }
                 Promise.all(promises)
