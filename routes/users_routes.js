@@ -22,6 +22,9 @@ module.exports = {
     updateUser: (req, res) => {
         updateUser(req, res);
     },
+    deleteUser: (req, res) => {
+        deleteUser(req, res);
+    },
     getUserList: (req, res) => {
         getUserList(req, res);
     },
@@ -194,6 +197,35 @@ function addNewUser(req, res) {
             res.send("Benutzer existiert bereits").end();
         }
 
+    });
+}
+
+function deleteUser(req, res) {
+    verifyPost(req, (err, decoded) => {
+        if (decoded && decoded.name && decoded.name.length > 0) {
+            var delUser = req.body;
+            User.findById(delUser._id, (err, user) => {
+                if (err) {
+                    res.status(500);
+                    res.send("Benutzer löschen fehlgeschlagen").end();
+                    return;
+                }
+                user.remove((err) => {
+                    if (err) {
+                        res.status(500);
+                        res.send("Benutzer löschen fehlgeschlagen").end();
+                        return;
+                    }
+                })
+                res.status(204)
+                res.end();
+                return;
+
+            });
+        } else {
+            res.status(404);
+            return;
+        }
     });
 }
 

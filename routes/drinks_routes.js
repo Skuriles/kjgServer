@@ -19,9 +19,6 @@ module.exports = {
     getUserOverview: (req, res) => {
         getUserOverview(req, res);
     },
-    updateUserDrinks: (req, res) => {
-        updateUserDrinks(req, res);
-    },
     addUserDrink: (req, res) => {
         addUserDrink(req, res);
     },
@@ -31,8 +28,8 @@ module.exports = {
     deleteDrink: (req, res) => {
         deleteDrink(req, res);
     },
-    getDailyWinners: (req, res) => {
-        getDailyWinners(req, res);
+    getDailyLeaders: (req, res) => {
+        getDailyLeaders(req, res);
     }
 };
 
@@ -40,6 +37,64 @@ function verifyPost(req, callback) {
     var token = req.headers.authorization;
     var cert = fs.readFileSync("private.key"); // get public key
     jwt.verify(token, cert, callback);
+}
+
+function getDailyLeaders(req, res) {
+    verifyPost(req, (err, decoded) => {
+        if (decoded && decoded.name && decoded.name.length > 0) {
+            var now = new Date().getTime();
+            var oneDay = 86400000;
+            var yesterday = now - oneDay;
+            UserDrink.find({ createdAt: { $gte: new Date(yesterday) } })
+                .populate({
+                    path: "user",
+                    select: "name"
+                })
+                .exec((err, dailyDrinks) => {
+                    if (err) {
+                        res.status(500);
+                        res.end();
+                        return;
+                    }
+                    var dailyWinner = getTotalWinner(dailyDrinks);
+                    Drink.findOne({ name: "Blitzkolben" }, (err, drink) => {
+                        UserDrink.find({ drink: drink.id })
+                            .populate({
+                                path: "user",
+                                select: "name"
+                            })
+                            .exec((err, blitzis) => {
+                                if (err) {
+                                    res.status(500);
+                                    res.end();
+                                    return;
+                                }
+                                var dailyWinnersBlitz = getTotalWinner(blitzis);
+                                UserDrink.find({}, "user")
+                                    .populate({
+                                        path: "user",
+                                        select: "name"
+                                    })
+                                    .exec((err, users) => {
+                                        if (err) {
+                                            res.status(500);
+                                            res.end();
+                                            return;
+                                        }
+                                        var winnerTotal = getTotalWinner(users);
+                                        var response = {
+                                            dailyWinner: dailyWinner,
+                                            dailyWinnersBlitz: dailyWinnersBlitz,
+                                            winnerUserTotal: winnerTotal
+                                        };
+                                        res.send(response);
+                                        return;
+                                    });
+                            });
+                    });
+                });
+        }
+    });
 }
 
 function getUserDrinks(req, res) {
@@ -129,112 +184,6 @@ function getDrinks(req, res) {
     });
 }
 
-function getDailyWinners(req, res) {
-    verifyPost(req, (err, decoded) => {
-        if (decoded && decoded.name && decoded.name.length > 0) {
-            jsonfile.readFile(path.join(filePath, file), (err, users) => {
-                if (!users) {
-                    users = [];
-                    res.send(users);
-                    return;
-                }
-                var usersDaily = getUsersDaily(users);
-                var winners = getWinnersPerDay(usersDaily);
-                res.send(winners);
-                return;
-            });
-        } else {
-            res.status(404);
-            login(res);
-            return;
-        }
-    });
-}
-
-function getWinnersPerDay(users) {
-    var dayWinners = [];
-    for (var i = 0; i < users.length; i++) {
-        for (var j = 0; j < users[i].dayTotal.length; j++) {
-            var dayTotal = users[i].dayTotal[j];
-            var newEntry = true;
-            for (var k = 0; k < dayWinners.length; k++) {
-                if (
-                    dayWinners[k].day === dayTotal.day &&
-                    dayWinners[k].month === dayTotal.month &&
-                    dayWinners[k].year === dayTotal.year
-                ) {
-                    if (dayWinners[k].total < dayTotal.total) {
-                        dayWinners[k].name = users[i].name;
-                        dayWinners[k].total = dayTotal.total;
-                    }
-                    if (dayWinners[k].total == dayTotal.total) {
-                        if (dayWinners[k].name.indexOf(users[i].name) === -1) {
-                            dayWinners[k].name = dayWinners[k].name + " & " + users[i].name;
-                        }
-                    }
-                    newEntry = false;
-                    break;
-                }
-            }
-            if (newEntry) {
-                dayWinners.push({
-                    name: users[i].name,
-                    day: dayTotal.day,
-                    month: dayTotal.month,
-                    year: dayTotal.year,
-                    total: dayTotal.total
-                });
-            }
-        }
-    }
-    return dayWinners.sort(sortByDate);
-}
-
-function getUsersDaily(users) {
-    var usersDaily = [];
-    // {day, user, total}
-    for (var i = 0; i < users.length; i++) {
-        var userDayTotal = {};
-        userDayTotal.name = users[i].name;
-        userDayTotal.dayTotal = [];
-        for (var j = 0; j < users[i].drinks.length; j++) {
-            for (var k = 0; k < users[i].drinks[j].timestamp.length; k++) {
-                var timestamp = users[i].drinks[j].timestamp[k];
-                var date = new Date(timestamp);
-                var day = date.getDate();
-                var month = date.getMonth() + 1;
-                var year = date.getFullYear();
-                var dayFound = false;
-                for (var t = 0; t < userDayTotal.dayTotal.length; t++) {
-                    if (
-                        userDayTotal.dayTotal[t].day === day &&
-                        userDayTotal.dayTotal[t].month === month &&
-                        userDayTotal.dayTotal[t].year === year
-                    ) {
-                        if (!userDayTotal.dayTotal[t].total) {
-                            userDayTotal.dayTotal[t].total = 1;
-                        } else {
-                            userDayTotal.dayTotal[t].total++;
-                        }
-                        dayFound = true;
-                        break;
-                    }
-                }
-                if (!dayFound) {
-                    userDayTotal.dayTotal.push({
-                        day: day,
-                        month: month,
-                        year: year,
-                        total: 1
-                    });
-                }
-            }
-        }
-        usersDaily.push(userDayTotal);
-    }
-    return usersDaily;
-}
-
 function addUserDrink(req, res) {
     verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
@@ -275,44 +224,6 @@ function addUserDrink(req, res) {
     });
 }
 
-function updateUserDrinks(req, res) {
-    verifyPost(req, (err, decoded) => {
-        if (decoded && decoded.name && decoded.name.length > 0) {
-            var userDrink = req.body;
-            if (userDrink) {
-                var updateDrinkUser = [];
-                var promises = [];
-                var errors = [];
-                for (var i = 0; i < userDrink.drinks.length; i++) {
-                    var promise = UserDrink.update({ user: userDrink.userid, drink: userDrink.drinks[i].drinkId }, { $set: { count: userDrink.drinks[i].count } }, { upsert: true });
-                    promises.push(promise);
-                }
-                Promise.all(promises)
-                    .then(values => {
-                        if (errors.length > 0) {
-                            console.log(errors);
-                            res.status(500);
-                            res.send("Speichern fehlgeschlagen").end();
-                            return;
-                        } else {
-                            res.status(204);
-                            res.end();
-                            return;
-                        }
-                    })
-                    .catch(err => {
-                        res.status(500);
-                        res.send("Speichern fehlgeschlagen").end();
-                        return;
-                    });
-            }
-        } else {
-            res.status(404);
-            return;
-        }
-    });
-}
-
 function deleteDrink(req, res) {
     verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
@@ -323,6 +234,10 @@ function deleteDrink(req, res) {
                         res.status(500);
                         res.send("Getränk löschen fehlgeschlagen").end();
                         return;
+                    }
+                    if (drink.name === "Blitzkolben") {
+                        res.status(500);
+                        res.send("Nur Gott selbst kann den Blitzkolben löschen").end();
                     }
                     drink.remove(err => {
                         if (err) {
@@ -383,4 +298,30 @@ function saveDrink(req, res) {
             return;
         }
     });
+}
+
+function getTotalWinner(usersDrinks) {
+    var userCounter = [];
+    for (let i = 0; i < usersDrinks.length; i++) {
+        const user = usersDrinks[i].user;
+        var found = false;
+        for (let j = 0; j < userCounter.length; j++) {
+            const userCount = userCounter[j];
+            if (userCount.user._id === user._id) {
+                userCount.count++;
+                found = true;
+            }
+        }
+        if (!found) {
+            userCounter.push({ user: user, count: 1 });
+        }
+    }
+    var winner = { user: null, count: 0 };
+    for (let t = 0; t < userCounter.length; t++) {
+        var count = userCounter[t].count;
+        if (count > winner.count) {
+            winner = userCounter[t];
+        }
+    }
+    return winner;
 }

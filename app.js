@@ -8,6 +8,7 @@ var compression = require('compression')
 var mongoose = require('mongoose');
 var User = require('./mongoSchemes/user');
 var Role = require('./mongoSchemes/role');
+var Drink = require('./mongoSchemes/drink');
 var routes = require('./routes/routes');
 
 var app = express();
@@ -41,6 +42,7 @@ var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', () => {
     checkRoles(checkUsers);
+    checkBlitzKolben();
     console.log("Connected successfully to server");
 });
 
@@ -94,5 +96,24 @@ function checkUsers() {
 
         }
     });
+}
+
+function checkBlitzKolben() {
+    console.log("checkBlitzKolben");
+    Drink.findOne({ name: "Blitzkolben" }, (err, drink) => {
+        if (err) {
+            console.log(err);
+        }
+        if (!drink) {
+            var blitzi = new Drink({ name: "Blitzkolben" });
+            blitzi.save((err, drink) => {
+                if (err) {
+                    console.log(err);
+                } else {
+                    console.log("Blitzkolben created successfully")
+                }
+            });
+        }
+    })
 }
 module.exports = app;
