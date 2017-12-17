@@ -8,7 +8,9 @@ var Role = require('../mongoSchemes/role');
 
 module.exports = {
     start: (req, res) => {
-        res.sendFile(path.resolve(__dirname + '/../views/index.html'));
+        // localhost
+        // res.sendFile(path.resolve(__dirname + '/../views/index.html'));        
+        res.sendFile(path.resolve(__dirname + '/../public/index.html'));
     },
     loginWithToken: (req, res) => {
         loginWithToken(req, res);
