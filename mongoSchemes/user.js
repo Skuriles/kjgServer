@@ -3,8 +3,13 @@ var UserDrink = require('./drinkPerUser');
 var Schema = mongoose.Schema;
 
 var userSchema = Schema({
-    name: String,
-    password: { type: String, select: false },
+    name: {
+        type: String,
+        unique: true,
+        required: true,
+        lowercase: true
+    },
+    password: { type: String, select: false, required: true },
     email: String,
     checked: Boolean,
     role: { type: Schema.Types.ObjectId, ref: "Role" }

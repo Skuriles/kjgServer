@@ -5,6 +5,7 @@ var mongoose = require('mongoose');
 var User = require('../mongoSchemes/user');
 var Drink = require('../mongoSchemes/drink');
 var Role = require('../mongoSchemes/role');
+var bcrypt = require('bcrypt-nodejs');
 
 module.exports = {
     start: (req, res) => {
@@ -167,7 +168,7 @@ function getUserDetails(req, res) {
 
 function addNewUser(req, res) {
     var user = req.body;
-    User.findOne({ name: user.name, password: user.password }, (err, regUser) => {
+    User.findOne({ name: user.name.toLowerCase() }, (err, regUser) => {
         if (err) {
             res.status(500);
             res.send(err).end();
@@ -178,16 +179,29 @@ function addNewUser(req, res) {
                 if (err) {
                     console.log(err);
                 } else {
-                    var newUser = new User({ name: user.name, password: user.password, role: role.id });
-                    // user.role = mongoose.Types.ObjectId(role.id);
-                    newUser.save((err) => {
+                    bcrypt.hash(user.password, null, null, function(err, hash) {
                         if (err) {
                             res.status(500);
                             res.send(err).end();
                             return;
+                        }
+                        if (hash) {
+                            var newUser = new User({ name: user.name, password: hash, role: role.id });
+                            // user.role = mongoose.Types.ObjectId(role.id);
+                            newUser.save((err) => {
+                                if (err) {
+                                    res.status(500);
+                                    res.send(err).end();
+                                    return;
+                                } else {
+                                    res.status(204);
+                                    res.send("Erfolgreich registriert").end();
+                                    return;
+                                }
+                            });
                         } else {
-                            res.status(204);
-                            res.send("Erfolgreich registriert").end();
+                            res.status(500);
+                            res.send("User pw hash was not created").end();
                             return;
                         }
                     });
@@ -235,7 +249,7 @@ function updateUser(req, res) {
     verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
             var oldUser = req.body;
-            if (oldUser.name = decoded.name) {
+            if (oldUser.name === decoded.name) {
                 res.status(500);
                 res.send("Eigener Benutzer kann nicht geändert werden").end();
                 return;
@@ -243,7 +257,15 @@ function updateUser(req, res) {
             var pw = oldUser.password;
             var updateUserModel = {};
             if (pw && pw.length > 0) {
-                updateUserModel.password = pw;
+                bcrypt.hash(pw, null, null, function(err, hash) {
+                    if (!err && hash) {
+                        updateUserModel.password = hash;
+                    } else {
+                        res.status(500);
+                        res.send("Benutzer speichern fehlgeschlagen").end();
+                        return;
+                    }
+                });
             }
             updateUserModel.role = mongoose.Types.ObjectId(oldUser.role);
             User.findByIdAndUpdate(oldUser._id, updateUserModel, { new: true },
@@ -327,13 +349,19 @@ function setUserLogin(req, res) {
             if (users && users.length > 0) {
                 var user = new User(req.body).toObject();
                 var cert = fs.readFileSync('private.key');
-                console.log(user.name);
-                var token = jwt.sign({ name: user.name, password: user.password }, cert, { expiresIn: '10y' });
-
-                User.findOne({ name: user.name, password: user.password }, (err, regUser) => {
+                User.findOne({ name: user.name }).select('password name').exec((err, regUser) => {
                     if (!err && regUser) {
-                        res.send({ token: token, user: regUser });
-                        return;
+                        bcrypt.compare(user.password, regUser.password, function(err, result) {
+                            if (err) {
+                                res.status(500);
+                                res.send(err).end();
+                                return;
+                            }
+                            var token = jwt.sign({ name: user.name, password: regUser.password }, cert, { expiresIn: '10y' });
+                            regUser.password = null;
+                            res.send({ token: token, user: regUser });
+                            return;
+                        });
                     } else {
                         res.status(500);
                         res.send("Benutzer nicht gefunden oder PW falsch").end();

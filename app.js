@@ -10,6 +10,9 @@ var User = require('./mongoSchemes/user');
 var Role = require('./mongoSchemes/role');
 var Drink = require('./mongoSchemes/drink');
 var routes = require('./routes/routes');
+var pushroutes = require('./routes/pushroutes');
+var bcrypt = require('bcrypt-nodejs');
+var webpush = require('web-push');
 
 var app = express();
 
@@ -27,11 +30,27 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use('/api', routes);
+app.use('/push', pushroutes);
 app.use('/public', express.static(path.join(__dirname, 'public')));
+app.get('/ngsw-worker.js', function(req, res) {
+    res.sendfile(__dirname + '/public/ngsw-worker.js');
+});
 //default route:
 app.get('*', function(req, res) {
     res.sendfile(__dirname + '/public/index.html');
 });
+
+var vapidKeys = {
+    publicKey: 'BKTnbc-Ix1NCqty80oTIeLcGTTwmneo6Y9LwHSoxp7lgtmBDYfHUY0MQIvg2wfyzJZ0hdKZ_tfo7FtiEq3lGKxw',
+    privateKey: 'XofyPUHu8KSJCOmfH7PJN-cw3vNWmXHSJDX1ohqrApc'
+}
+webpush.setGCMAPIKey('AIzaSyCuFlNg01aXLvGkI1ValqTFLS7SlDcttrE');
+//push stuff
+webpush.setVapidDetails(
+    'mailto:cabeskuriles@googlemail.com',
+    vapidKeys.publicKey,
+    vapidKeys.privateKey
+);
 
 //mongostuff
 
@@ -91,16 +110,17 @@ function checkUsers() {
                 if (err) {
                     console.log(err);
                 }
-                var user = new User({ name: "Admin", password: "admin", role: role._id });
-                user.save((err, user) => {
-                    if (err) {
-                        console.log(err);
-                    } else {
-                        console.log("Superadmin created successfully")
-                    }
+                bcrypt.hash("admin", null, null, function(err, hash) {
+                    var user = new User({ name: "Admin", password: hash, role: role._id });
+                    user.save((err, user) => {
+                        if (err) {
+                            console.log(err);
+                        } else {
+                            console.log("Superadmin created successfully")
+                        }
+                    });
                 });
             })
-
         }
     });
 }
@@ -123,4 +143,5 @@ function checkBlitzKolben() {
         }
     })
 }
+
 module.exports = app;

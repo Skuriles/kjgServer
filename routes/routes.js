@@ -5,6 +5,7 @@ var drinkRoutes = require('./drinks_routes');
 var signalRoutes = require('./signal_routes');
 
 router.route('/').get(userRoutes.start);
+router.route('*').get(userRoutes.start);
 router.route('/getUserList').post(userRoutes.getUserList);
 router.route('/getRoles').post(userRoutes.getRoles);
 router.route('/getUserOverview').post(userRoutes.getUserOverview);
