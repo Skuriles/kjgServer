@@ -14,7 +14,6 @@ router.route('/updateUser').post(userRoutes.updateUser);
 router.route('/deleteUser').post(userRoutes.deleteUser);
 router.route('/login').post(userRoutes.setUserLogin);
 router.route('/loginWithToken').post(userRoutes.loginWithToken);
-router.route('/getUserDetails').post(userRoutes.getUserDetails);
 
 // drink routes
 router.route('/getDailyLeaders').post(drinkRoutes.getDailyLeaders);

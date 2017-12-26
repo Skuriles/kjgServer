@@ -56,9 +56,9 @@ webpush.setVapidDetails(
 
 // Connection URL
 //local
-//var url = 'mongodb://kjgAdmin:kjg2017@localhost:27017/kjgapp';
+var url = 'mongodb://kjgAdmin:kjg2017@localhost:27017/kjgapp';
 // uberspace
-var url = 'mongodb://kjgAdmin:kjg2017@localhost:21197/kjgapp';
+//var url = 'mongodb://kjgAdmin:kjg2017@localhost:21197/kjgapp';
 
 // Use connect method to connect to the server
 // mongo user is kjgAdmin, pw: kjg2017

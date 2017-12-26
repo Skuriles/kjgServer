@@ -1,12 +1,12 @@
-var fs = require("fs");
 var path = require("path");
-var jwt = require("jsonwebtoken");
 var mongoose = require("mongoose");
 var User = require("../mongoSchemes/user");
 var Drink = require("../mongoSchemes/drink");
 var UserDrink = require("../mongoSchemes/drinkPerUser");
 var Role = require("../mongoSchemes/role");
 var Tools = require("../tools/tools");
+var tokenhandler = require("./tokenhandler");
+
 mongoose.Promise = Promise;
 
 module.exports = {
@@ -33,14 +33,8 @@ module.exports = {
     }
 };
 
-function verifyPost(req, callback) {
-    var token = req.headers.authorization;
-    var cert = fs.readFileSync("private.key"); // get public key
-    jwt.verify(token, cert, callback);
-}
-
 function getDailyLeaders(req, res) {
-    verifyPost(req, (err, decoded) => {
+    tokenhandler.verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
             var now = new Date().getTime();
             var oneDay = 86400000;
@@ -70,7 +64,7 @@ function getDailyLeaders(req, res) {
                                     return;
                                 }
                                 var dailyWinnersBlitz = getTotalWinner(blitzis);
-                                UserDrink.find({}, "user")
+                                UserDrink.find({})
                                     .populate({
                                         path: "user",
                                         select: "name"
@@ -98,7 +92,7 @@ function getDailyLeaders(req, res) {
 }
 
 function getUserDrinks(req, res) {
-    verifyPost(req, (err, decoded) => {
+    tokenhandler.verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
             var userids = req.body;
             UserDrink.find({ user: { $in: userids } })
@@ -163,7 +157,7 @@ function getUserDrinks(req, res) {
 }
 
 function getDrinks(req, res) {
-    verifyPost(req, (err, decoded) => {
+    tokenhandler.verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
             Drink.find()
                 .sort({ name: 1 })
@@ -185,7 +179,7 @@ function getDrinks(req, res) {
 }
 
 function addUserDrink(req, res) {
-    verifyPost(req, (err, decoded) => {
+    tokenhandler.verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
             var addDrink = req.body;
             if (!addDrink.add) {
@@ -225,7 +219,7 @@ function addUserDrink(req, res) {
 }
 
 function deleteDrink(req, res) {
-    verifyPost(req, (err, decoded) => {
+    tokenhandler.verifyAdminPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
             var editDrink = req.body;
             if (editDrink._id) {
@@ -260,7 +254,7 @@ function deleteDrink(req, res) {
 }
 
 function saveDrink(req, res) {
-    verifyPost(req, (err, decoded) => {
+    tokenhandler.verifyAdminPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
             var editDrink = req.body;
             if (editDrink._id) {
