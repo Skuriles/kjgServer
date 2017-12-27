@@ -43,7 +43,7 @@ module.exports = {
 function getRoles(req, res) {
     tokenhandler.verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
-            Role.find((err, roles) => {
+            Role.find({ name: { $nin: ["SuperAdmin"] } }, (err, roles) => {
                 if (err) {
                     res.status(500);
                     res.end();
@@ -62,7 +62,7 @@ function getRoles(req, res) {
 function getUserList(req, res) {
     tokenhandler.verifyPost(req, (err, decoded) => {
         if (decoded && decoded.name && decoded.name.length > 0) {
-            User.find((err, users) => {
+            User.find({ name: { $nin: ["admin"] } }, (err, users) => {
                 if (err) {
                     res.status(500);
                     res.end();

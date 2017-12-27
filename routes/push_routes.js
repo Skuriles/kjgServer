@@ -1,10 +1,17 @@
-var express = require("express");
-var router = express.Router();
 var webpush = require("web-push");
 
 const subs = [];
 
-router.route("/webpush").post((req, res) => {
+module.exports = {
+    webpush: (req, res) => {
+        webpush(req, res);
+    },
+    send: (req, res) => {
+        send(req, res);
+    }
+}
+
+function webpush(req, res) {
     var action = req.body.action;
     var push = req.body.subscription;
     switch (action) {
@@ -40,9 +47,9 @@ router.route("/webpush").post((req, res) => {
         default:
             break;
     }
-});
+};
 
-router.route("/send").post((req, res) => {
+function send(req, res) {
     for (let i = 0; i < subs.length; i++) {
         const push = subs[i];
         webpush.sendNotification(push, JSON.stringify({
@@ -61,6 +68,4 @@ router.route("/send").post((req, res) => {
         .status(204)
         .send()
         .end();
-});
-
-module.exports = router;
+};

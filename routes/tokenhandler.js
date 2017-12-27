@@ -21,7 +21,7 @@ function verifyAdminPost(req, callback) {
     var token = req.headers.authorization;
     var cert = fs.readFileSync("private.key"); // get public key
     var decoded = jwt.verify(token, cert);
-    if (decoded && decoded.role === "Admin") {
+    if (decoded && decoded.role === "Admin" || decoded.role === "SuperAdmin") {
         callback(null, decoded);
     } else {
         callback("No Admin", null);

@@ -10,7 +10,6 @@ var User = require('./mongoSchemes/user');
 var Role = require('./mongoSchemes/role');
 var Drink = require('./mongoSchemes/drink');
 var routes = require('./routes/routes');
-var pushroutes = require('./routes/pushroutes');
 var bcrypt = require('bcrypt-nodejs');
 var webpush = require('web-push');
 
@@ -30,7 +29,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use('/api', routes);
-app.use('/push', pushroutes);
 app.use('/public', express.static(path.join(__dirname, 'public')));
 app.get('/ngsw-worker.js', function(req, res) {
     res.sendfile(__dirname + '/public/ngsw-worker.js');
@@ -80,6 +78,7 @@ function checkRoles(callback) {
             if (roles.length <= 0) {
                 var adminRole = new Role({ name: "Admin" });
                 var userRole = new Role({ name: "Knecht" });
+                var superAdminRole = new Role({ name: "SuperAdmin" });
                 adminRole.save(() => {
                     if (err) {
                         console.log(err);
@@ -91,7 +90,14 @@ function checkRoles(callback) {
                             console.log(err);
                         } else {
                             console.log("UserRole created successfully");
-                            callback();
+                            superAdminRole.save(() => {
+                                if (err) {
+                                    console.log(err);
+                                } else {
+                                    console.log("SuperAdminRole created successfully");
+                                    callback();
+                                }
+                            });
                         }
                     })
                 });
@@ -106,7 +112,7 @@ function checkRoles(callback) {
 function checkUsers() {
     User.find((err, users) => {
         if (users.length === 0) {
-            Role.findOne({ name: "Admin" }, (err, role) => {
+            Role.findOne({ name: "SuperAdmin" }, (err, role) => {
                 if (err) {
                     console.log(err);
                 }

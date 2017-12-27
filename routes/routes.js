@@ -2,7 +2,8 @@ var express = require('express');
 var router = express.Router();
 var userRoutes = require('./users_routes');
 var drinkRoutes = require('./drinks_routes');
-var signalRoutes = require('./signal_routes');
+var programRoutes = require('./program_routes');
+var pushRoutes = require('./push_routes');
 
 router.route('/').get(userRoutes.start);
 router.route('*').get(userRoutes.start);
@@ -23,7 +24,13 @@ router.route('/updateDrink').post(drinkRoutes.saveDrink);
 router.route('/addUserDrink').post(drinkRoutes.addUserDrink);
 router.route('/deleteDrink').post(drinkRoutes.deleteDrink);
 
-// signal routes
-router.route('/duel').post(signalRoutes.duel);
+// program routes
+router.route('/deleteDay').post(programRoutes.deleteDay);
+router.route('/updateDay').post(programRoutes.updateDay);
+router.route('/getDays').post(programRoutes.getDays);
+
+// push routes
+router.route('/webpush').post(pushRoutes.webpush);
+router.route('/send').post(pushRoutes.send);
 
 module.exports = router;
