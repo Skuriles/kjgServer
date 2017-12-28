@@ -5,6 +5,8 @@ var DailyPlan = require('./dailyPlan');
 var dailyPlanEle = Schema({
     shortName: String,
     description: String,
+    material: [String],
+    attachments: [String],
     people: [String]
 })
 

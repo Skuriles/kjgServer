@@ -87,6 +87,8 @@ function getDailyLeaders(req, res) {
                             });
                     });
                 });
+        } else {
+            res.sendStatus(404);
         }
     });
 }
@@ -150,7 +152,7 @@ function getUserDrinks(req, res) {
                     return;
                 });
         } else {
-            res.status(404);
+            res.sendStatus(404);
             return;
         }
     });
@@ -172,7 +174,7 @@ function getDrinks(req, res) {
                     return;
                 });
         } else {
-            res.status(404);
+            res.sendStatus(404);
             return;
         }
     });
@@ -214,6 +216,9 @@ function addUserDrink(req, res) {
                     }
                 });
             }
+        } else {
+            res.sendStatus(404);
+            return;
         }
     });
 }
@@ -246,7 +251,7 @@ function deleteDrink(req, res) {
                     });
                 });
             } else {
-                res.status(404);
+                res.sendStatus(404);
                 return;
             }
         }
@@ -288,7 +293,7 @@ function saveDrink(req, res) {
                 });
             }
         } else {
-            res.status(404);
+            res.sendStatus(404);
             return;
         }
     });

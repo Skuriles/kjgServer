@@ -28,6 +28,9 @@ router.route('/deleteDrink').post(drinkRoutes.deleteDrink);
 router.route('/deleteDay').post(programRoutes.deleteDay);
 router.route('/updateDay').post(programRoutes.updateDay);
 router.route('/getDays').post(programRoutes.getDays);
+router.route('/getProgramPoints').post(programRoutes.getProgramPoints);
+router.route('/updateProgramPoint').post(programRoutes.updateProgramPoint);
+router.route('/deleteProgramPoint').post(programRoutes.deleteProgramPoint);
 
 // push routes
 router.route('/webpush').post(pushRoutes.webpush);

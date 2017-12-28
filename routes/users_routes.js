@@ -53,7 +53,7 @@ function getRoles(req, res) {
                 return;
             });
         } else {
-            res.status(404);
+            res.sendStatus(404);
             return;
         }
     });
@@ -72,7 +72,7 @@ function getUserList(req, res) {
                 return;
             });
         } else {
-            res.status(404);
+            res.sendStatus(404);
             return;
         }
     });
@@ -83,7 +83,7 @@ function getUserOverview(req, res) {
         if (decoded && decoded.user && decoded.user.length > 0) {
             jsonfile.readFile(path.join(filePath, file), (err, users) => {
                 if (!users) {
-                    res.status(404);
+                    res.sendStatus(404);
                     res.end();
                     return;
                 }
@@ -116,7 +116,7 @@ function getUserOverview(req, res) {
                 var usersDaily = getUsersDaily(users);
                 var winners = getWinnersPerDay(usersDaily);
                 if (!winners || winners.length === 0) {
-                    res.status(404);
+                    res.sendStatus(404);
                     return;
                 }
                 var index = winners.length - 1;
@@ -135,7 +135,7 @@ function getUserOverview(req, res) {
                 res.send(returnUsers).end();
             });
         } else {
-            res.status(404);
+            res.sendStatus(404);
             login(res);
             return;
         }
@@ -216,7 +216,7 @@ function deleteUser(req, res) {
                 return;
             });
         } else {
-            res.status(404);
+            res.sendStatus(404);
             return;
         }
     });
@@ -260,7 +260,7 @@ function updateUser(req, res) {
                 }
             );
         } else {
-            res.status(404);
+            res.sendStatus(404);
             return;
         }
     });
