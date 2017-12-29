@@ -3,24 +3,10 @@ var Schema = mongoose.Schema;
 
 var day = Schema({
     name: String,
-    date: Date
-})
-
-day.pre('remove', function(next) {
-    DailyPlan.find({ day: this._id }, (err, days) => {
-        const errors = [];
-        for (let i = 0; i < days.length; i++) {
-            const day = days[i];
-            day.set({ day: null })
-            day.save((err) => {
-                if (err) {
-                    next(err);
-                    return;
-                }
-                next()
-            })
-        };
-    })
+    date: Date,
+    morning: { type: Schema.ObjectId, ref: "ProgramPoint" },
+    afternoon: { type: Schema.ObjectId, ref: "ProgramPoint" },
+    evening: { type: Schema.ObjectId, ref: "ProgramPoint" }
 })
 
 var Day = mongoose.model('Day', day)

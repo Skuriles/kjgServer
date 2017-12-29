@@ -1,8 +1,8 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
-var DailyPlan = require('./dailyPlan');
+var Day = require('./day')
 
-var dailyPlanEle = Schema({
+var programPoint = Schema({
     shortName: String,
     description: String,
     material: [String],
@@ -10,12 +10,12 @@ var dailyPlanEle = Schema({
     people: [String]
 })
 
-dailyPlanEle.pre('remove', function(next) {
-    DailyPlan.find({ $or: [{ 'morning': this._id }, { 'afternoon': this._id }, { 'evening': this._id }] }, (err, days) => {
+programPoint.pre('remove', function(next) {
+    Day.find({ $or: [{ 'morning': this._id }, { 'afternoon': this._id }, { 'evening': this._id }] }, (err, days) => {
         const errors = [];
         for (let i = 0; i < days.length; i++) {
             const day = days[i];
-            if (day.morning === this._id) {
+            if (day.morning && day.morning.equals(this._id)) {
                 day.set({ morning: null })
                 day.save((err) => {
                     if (err) {
@@ -23,7 +23,7 @@ dailyPlanEle.pre('remove', function(next) {
                     }
                 })
             }
-            if (day.afternoon === this._id) {
+            if (day.afternoon && day.afternoon.equals(this._id)) {
                 day.set({ afternoon: null })
                 day.save((err) => {
                     if (err) {
@@ -31,7 +31,7 @@ dailyPlanEle.pre('remove', function(next) {
                     }
                 })
             }
-            if (day.evening === this._id) {
+            if (day.evening && day.evening.equals(this._id)) {
                 day.set({ evening: null })
                 day.save((err) => {
                     if (err) {
@@ -44,5 +44,5 @@ dailyPlanEle.pre('remove', function(next) {
     })
 })
 
-var DailyPlanEle = mongoose.model('DailyPlanEle', dailyPlanEle)
-module.exports = DailyPlanEle;
+var ProgramPoint = mongoose.model('ProgramPoint', programPoint)
+module.exports = ProgramPoint;
