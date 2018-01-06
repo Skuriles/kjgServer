@@ -31,6 +31,15 @@ router.route('/getDays').post(programRoutes.getDays);
 router.route('/getProgramPoints').post(programRoutes.getProgramPoints);
 router.route('/updateProgramPoint').post(programRoutes.updateProgramPoint);
 router.route('/deleteProgramPoint').post(programRoutes.deleteProgramPoint);
+router.route('/getJobs').post(programRoutes.getJobs);
+router.route('/updateJob').post(programRoutes.updateJob);
+router.route('/deleteJob').post(programRoutes.deleteJob);
+
+//upload
+router.route('/upload').post(programRoutes.upload);
+
+//download
+//router.route('/attachments/:id/:fileName').get(programRoutes.download);
 
 // push routes
 router.route('/webpush').post(pushRoutes.webpush);

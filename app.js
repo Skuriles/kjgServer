@@ -30,12 +30,13 @@ app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use('/api', routes);
 app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use('/attachments', express.static(path.join(__dirname, 'attachments')));
 app.get('/ngsw-worker.js', function(req, res) {
-    res.sendfile(__dirname + '/public/ngsw-worker.js');
+    res.sendFile(__dirname + '/public/ngsw-worker.js');
 });
 //default route:
 app.get('*', function(req, res) {
-    res.sendfile(__dirname + '/public/index.html');
+    res.sendFile(__dirname + '/public/index.html');
 });
 
 var vapidKeys = {
@@ -54,9 +55,9 @@ webpush.setVapidDetails(
 
 // Connection URL
 //local
-//var url = 'mongodb://kjgAdmin:kjg2017@localhost:27017/kjgapp';
+var url = 'mongodb://kjgAdmin:kjg2017@localhost:27017/kjgapp';
 // uberspace
-var url = 'mongodb://kjgAdmin:kjg2017@localhost:21197/kjgapp';
+//var url = 'mongodb://kjgAdmin:kjg2017@localhost:21197/kjgapp';
 
 // Use connect method to connect to the server
 // mongo user is kjgAdmin, pw: kjg2017
