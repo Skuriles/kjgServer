@@ -45,3 +45,4 @@ private.key
 private.key
 
 /public
+/attachments/**/*

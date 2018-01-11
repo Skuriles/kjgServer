@@ -39,7 +39,7 @@ router.route('/deleteJob').post(programRoutes.deleteJob);
 router.route('/upload').post(programRoutes.upload);
 
 //download
-//router.route('/attachments/:id/:fileName').get(programRoutes.download);
+router.route('/attachments/:id/:fileName').post(programRoutes.download);
 
 // push routes
 router.route('/webpush').post(pushRoutes.webpush);

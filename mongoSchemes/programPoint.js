@@ -2,6 +2,7 @@ var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 var Day = require('./day');
 var fs = require("fs");
+var path = require('path');
 
 var programPoint = Schema({
     shortName: String,
@@ -12,8 +13,8 @@ var programPoint = Schema({
     people: [String]
 })
 
-programPoint.pre('remove', function(next) {
-    var attPath = "./attachments/" + this._id;
+programPoint.pre('remove', function(next) {   
+    var attPath =  path.join(APPROOTPATH, "attachments", this._id);
     fs.readdir(attPath, (err, files) => {        
         files.forEach(file => {          
               fs.unlink(file);
@@ -58,7 +59,8 @@ programPoint.pre('remove', function(next) {
 })
 
 programPoint.post('findOneAndUpdate', function(point) { 
-    var attPath = "./attachments/" + point._id;
+    console.log(point._id);
+    var attPath =  path.join(APPROOTPATH, "attachments", point._id.toString());
     if (fs.existsSync(attPath)) {
     fs.readdir(attPath, (err, files) => {        
         if(err){
@@ -66,7 +68,7 @@ programPoint.post('findOneAndUpdate', function(point) {
         }
         files.forEach(file => {
           if(point.attachments.indexOf(file) === -1) {
-              fs.unlink(attPath + "\\" + file, (err)=> {
+              fs.unlink(attPath + "/" + file, (err)=> {
                   if(err){
                       console.log(err);
                   }

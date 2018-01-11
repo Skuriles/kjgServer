@@ -12,6 +12,7 @@ var Drink = require('./mongoSchemes/drink');
 var routes = require('./routes/routes');
 var bcrypt = require('bcrypt-nodejs');
 var webpush = require('web-push');
+global.APPROOTPATH = path.resolve(__dirname);
 
 var app = express();
 
@@ -30,7 +31,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use('/api', routes);
 app.use('/public', express.static(path.join(__dirname, 'public')));
-app.use('/attachments', express.static(path.join(__dirname, 'attachments')));
+//app.use('/attachments', express.static(path.join(__dirname, 'attachments')));
 app.get('/ngsw-worker.js', function(req, res) {
     res.sendFile(__dirname + '/public/ngsw-worker.js');
 });

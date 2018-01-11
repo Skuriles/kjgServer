@@ -6,6 +6,7 @@ var Job = require("../mongoSchemes/job");
 var tokenhandler = require("./tokenhandler");
 var Tools = require("../tools/tools");
 var multer = require("multer");
+var path = require('path');
 
 module.exports = {
   updateDay: (req, res) => {
@@ -153,7 +154,7 @@ function updateProgramPoint(req, res) {
       ProgramPoint.findOneAndUpdate(
         { _id: programPointObj._id },
         programPointObj,
-        { upsert: true },
+        { upsert: true, new: true },
         (err, programPoint) => {
           if (err) {
             res.status(500);
@@ -265,12 +266,12 @@ function deleteJob(req, res) {
 
 function upload(req, res) {
   tokenhandler.verifyPost(req, (err, decoded) => {
-    if (decoded && decoded.name && decoded.name.length > 0) {
+    if (decoded && decoded.name && decoded.name.length > 0) {      
       var storage = multer.diskStorage({
         //multers disk storage settings
-        destination: function(req, file, cb) {
-          var uploadPath = "./attachments/" + req.headers.programid + "/";
-          if (!fs.existsSync(uploadPath)) {
+        destination: function(req, file, cb) {        
+          var uploadPath = path.join(APPROOTPATH, "attachments", req.headers.programid);
+          if (!fs.existsSync(uploadPath)) {           
             fs.mkdir(uploadPath, err => cb(err, uploadPath));
           } else {
             cb(null, uploadPath);
@@ -288,7 +289,9 @@ function upload(req, res) {
       /** API path that will upload the files */
 
       upload(req, res, function(err) {
-        if (err) {
+      
+        if (err) { 
+           console.log("folder does not exist " + uploadPath)
           res.send(err);
           return;
         }
@@ -301,5 +304,12 @@ function upload(req, res) {
 function download(req, res) {
   var id = req.params.id;
   var fileName = req.params.fileName;
-  res.sendFile("./attachments/" + id + "/" + fileName);  
+  var dlpath = path.join(APPROOTPATH, "attachments", id, fileName);
+  fs.access(dlpath, fileName, err => {
+    if (err) {
+      res.sendStatus(404);
+    } else {
+      res.download(dlpath);
+    }
+  });
 }
