@@ -4,6 +4,7 @@ var userRoutes = require('./users_routes');
 var drinkRoutes = require('./drinks_routes');
 var programRoutes = require('./program_routes');
 var pushRoutes = require('./push_routes');
+var rulesRoutes = require('./rules_routes');
 
 router.route('/').get(userRoutes.start);
 router.route('*').get(userRoutes.start);
@@ -34,6 +35,15 @@ router.route('/deleteProgramPoint').post(programRoutes.deleteProgramPoint);
 router.route('/getJobs').post(programRoutes.getJobs);
 router.route('/updateJob').post(programRoutes.updateJob);
 router.route('/deleteJob').post(programRoutes.deleteJob);
+
+// rules route
+router.route('/deleteRule').post(rulesRoutes.deleteRule);
+router.route('/updateRule').post(rulesRoutes.updateRule);
+router.route('/getRules').post(rulesRoutes.getRules);
+router.route('/deleteTeamRule').post(rulesRoutes.deleteTeamRule);
+router.route('/updateTeamRule').post(rulesRoutes.updateTeamRule);
+router.route('/getTeamRules').post(rulesRoutes.getTeamRules);
+
 
 //upload
 router.route('/upload').post(programRoutes.upload);
